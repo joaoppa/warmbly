@@ -139,7 +139,9 @@ var providerSelectors = []struct {
 	{"sendinblue.com", []string{"mail"}},
 	{"mailbox.org", []string{"mbo0001"}},
 	{"ionos", []string{"ionos1"}},
-	{"hostinger", []string{"hostingermail1", "hostingermail2"}},
+	// Hostinger publishes the hyphenated pair; the numbered names answer on
+	// no domain we have probed, so both forms are tried.
+	{"hostinger", []string{"hostingermail-a", "hostingermail-b", "hostingermail1", "hostingermail2"}},
 }
 
 const (
