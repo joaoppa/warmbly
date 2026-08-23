@@ -71,7 +71,9 @@ func (r Result) State() string {
 // defaultSelectors are common DKIM selectors to probe when the caller doesn't
 // know the domain's selector. DKIM selectors aren't discoverable from DNS, so a
 // "not found" only means none of these matched, not that DKIM is absent.
-var defaultSelectors = []string{"google", "default", "selector1", "selector2", "k1", "mail", "dkim", "s1", "s2"}
+// hostingermail-a/-b are Hostinger's fixed pair, and cPanel-style hosts sign
+// with "default"; without them every shared-hosting mailbox reads as DKIM-less.
+var defaultSelectors = []string{"google", "default", "selector1", "selector2", "k1", "mail", "dkim", "s1", "s2", "hostingermail-a", "hostingermail-b"}
 
 const lookupTimeout = 5 * time.Second
 
