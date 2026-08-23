@@ -1,0 +1,21 @@
+# Prende cada porta publicada ao loopback: o único caminho de entrada é o
+# túnel da Cloudflare, que roda nesta mesma máquina. Sem isto, o painel
+# admin, a API, o Postgres, o Redis e o NATS ficam ouvindo em 0.0.0.0.
+# !override substitui a lista do docker-compose.yml em vez de concatenar.
+services:
+  backend:
+    ports: !override ["127.0.0.1:8080:8080"]
+  web:
+    ports: !override ["127.0.0.1:5173:80"]
+  admin:
+    ports: !override ["127.0.0.1:5174:80"]
+  realtime:
+    ports: !override ["127.0.0.1:4000:4000"]
+  tracking:
+    ports: !override ["127.0.0.1:${TRACKING_PORT:-3000}:3000"]
+  postgres:
+    ports: !override ["127.0.0.1:15432:5432"]
+  redis:
+    ports: !override ["127.0.0.1:16379:6379"]
+  nats:
+    ports: !override ["127.0.0.1:4222:4222", "127.0.0.1:8222:8222"]
