@@ -48,6 +48,27 @@ Commit hygiene:
 - one line, no body. Make the line long and specific (what changed and where), not a stub like `feat: fix docs`
 - no `Co-Authored-By:` or other AI/agent attribution footers; rewrite any commit that has one before opening or updating a PR
 
+### This checkout is a downstream deployment, not upstream
+
+This tree runs the altius.net.br self-host. `origin` is the fork `joaoppa/warmbly`; `upstream` is the official `warmbly/warmbly`. All local work lives on the branch `altius`.
+
+- never commit to `main` and never build from it. The Docker images are built from the working tree, so the checked-out branch is what ships to production
+- commit local fixes to `altius` and push to `origin`. Keep each fix as its own commit so a rebase can drop it cleanly when upstream lands the same thing
+- to take upstream fixes:
+
+  ```
+  git fetch upstream
+  git rebase upstream/main
+  git push --force-with-lease origin altius
+  ```
+
+  then rebuild whatever changed (`docker compose -p warmbly build worker && docker compose -p warmbly up -d worker`)
+- read the rebase outcome, it is the signal: no conflict means the patch still applies; a patch git drops on its own means upstream fixed the same bug the same way and the local copy is now redundant; a conflict means upstream edited that code differently, so review before resolving instead of taking either side blindly
+
+Patches carried here that must never go into an upstream PR: `docker-compose.override.yml` (binds published ports to loopback so only the Cloudflare tunnel reaches the stack) and `teste-imap.sh`. The IMAP `ReleaseMailbox` fix is upstreamable and is tracked as issue #165.
+
+This host has no Go toolchain, so `make fmt` and `make lint` cannot run natively. Run them in Docker instead: `gofmt -l` and `go vet` under `golang:1.25-alpine`, and golangci-lint by `go install`ing the Makefile's pinned version inside that same image (the prebuilt `golangci/golangci-lint` image is built with an older Go and refuses this module).
+
 Copy / writing style:
 
 - do not lean on em dashes (`—`). Use them sparingly, only when one is genuinely the clearest option; prefer a period, comma, colon, or parentheses instead. This applies to user-facing copy and microcopy in `site/` and `web/`, and to docs. Overusing em dashes reads as machine-written.
