@@ -5,6 +5,8 @@
 services:
   backend:
     ports: !override ["127.0.0.1:8080:8080"]
+  forms:
+    ports: !override ["127.0.0.1:${FORMS_PORT:-8090}:8090"]
   web:
     ports: !override ["127.0.0.1:5173:80"]
   admin:
