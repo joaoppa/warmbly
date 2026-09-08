@@ -202,6 +202,13 @@ x-selfhost-env: &selfhost-env
   AI_MODEL_PAID: ${AI_MODEL_PAID:-}
   AI_BASE_URL: ${AI_BASE_URL:-}
   AI_FREE: ${AI_FREE:-}
+  # Pre-send email verification (in-house SMTP probe). The HELO name must be
+  # a public FQDN that resolves to this host's egress IP, or the prober
+  # declines to run rather than guess — a bad HELO makes Postfix reject at
+  # RCPT, which reads as "mailbox does not exist" and burns good leads.
+  EMAIL_VERIFY_HELO_HOST: ${EMAIL_VERIFY_HELO_HOST:-}
+  EMAIL_VERIFY_MAIL_FROM: ${EMAIL_VERIFY_MAIL_FROM:-}
+
   SEARCH_PROVIDER: ${SEARCH_PROVIDER:-}
   SEARCH_API_URL: ${SEARCH_API_URL:-}
   SEARCH_API_KEY: ${SEARCH_API_KEY:-}
