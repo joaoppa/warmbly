@@ -40,6 +40,8 @@ type ProviderSource interface {
 	// ReportVerificationProviderError flips the connection's health when the
 	// provider rejected the key or ran out of credits.
 	ReportVerificationProviderError(ctx context.Context, connectionID uuid.UUID, err error)
+	// ClearVerificationProviderError withdraws that error once the provider works.
+	ClearVerificationProviderError(ctx context.Context, connectionID uuid.UUID)
 }
 
 // Service verifies contact email addresses before they are ever sent to.
@@ -251,8 +253,20 @@ func (s *service) providerUsable(ctx context.Context, p *Provider) (int, error) 
 	s.creditsMu.Unlock()
 	if err != nil {
 		s.noteProviderError(ctx, p, err)
+	} else {
+		s.noteProviderOK(ctx, p)
 	}
 	return n, err
+}
+
+// noteProviderOK withdraws a recorded provider error once the key answers with
+// a balance again. The write is guarded in the repository, so a pass that finds
+// the connection already healthy costs nothing.
+func (s *service) noteProviderOK(ctx context.Context, p *Provider) {
+	if p == nil || p.ConnectionID == nil || s.providers == nil {
+		return
+	}
+	s.providers.ClearVerificationProviderError(ctx, *p.ConnectionID)
 }
 
 func (s *service) VerifyPending(ctx context.Context, limit int) (int, *errx.Error) {

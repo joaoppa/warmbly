@@ -61,6 +61,7 @@ type IntegrationRepository interface {
 	MarkConnectionSynced(ctx context.Context, id uuid.UUID, status models.IntegrationStatus, displayFields json.RawMessage, errMsg string) error
 	UpdateConnectionTokens(ctx context.Context, id uuid.UUID, accessEnc, refreshEnc string, expiresAt *time.Time, scopes []string) error
 	SetConnectionStatus(ctx context.Context, id uuid.UUID, status models.IntegrationStatus, health models.IntegrationHealth, detail string) error
+	ClearConnectionHealth(ctx context.Context, id uuid.UUID) error
 
 	// OAuth handshake state
 	CreateOAuthState(ctx context.Context, st *models.IntegrationOAuthState) error
@@ -347,6 +348,18 @@ func (r *integrationRepository) UpdateConnectionTokens(ctx context.Context, id u
 		    updated_at = $5
 		WHERE id = $6`,
 		nullIfEmptyStr(accessEnc), nullIfEmptyStr(refreshEnc), expiresAt, normalizeScopes(scopes), now, id)
+	return err
+}
+
+// ClearConnectionHealth marks a connection healthy again, and only writes when
+// it is not already, so a per-pass recovery check does not churn the row.
+func (r *integrationRepository) ClearConnectionHealth(ctx context.Context, id uuid.UUID) error {
+	now := time.Now().UTC()
+	_, err := r.db.Exec(ctx, `
+		UPDATE integration_connections
+		SET status = $1, health = $2, health_detail = NULL, health_checked_at = $3, updated_at = $3
+		WHERE id = $4 AND (status <> $1 OR health <> $2)`,
+		string(models.IntegrationStatusConnected), string(models.IntegrationHealthHealthy), now, id)
 	return err
 }
 

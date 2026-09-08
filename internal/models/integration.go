@@ -40,6 +40,10 @@ const (
 	IntegrationMillionVerifier IntegrationProvider = "millionverifier"
 )
 
+// VerificationProviders are the providers that verify contact addresses. A
+// connection to one of these makes a built-in verdict worth re-checking.
+var VerificationProviders = []IntegrationProvider{IntegrationMillionVerifier}
+
 // AllIntegrationProviders lists every provider the dashboard exposes. The
 // order here is the catalog order users see.
 var AllIntegrationProviders = []IntegrationProvider{

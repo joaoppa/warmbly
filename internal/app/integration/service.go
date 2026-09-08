@@ -167,6 +167,7 @@ type Service interface {
 	// emailverify.ProviderSource: the org's paid verification backend, if any.
 	VerificationProviderFor(ctx context.Context, orgID uuid.UUID) (*emailverifyapp.Provider, error)
 	ReportVerificationProviderError(ctx context.Context, connectionID uuid.UUID, err error)
+	ClearVerificationProviderError(ctx context.Context, connectionID uuid.UUID)
 
 	// Repo exposes the underlying repository for the inbound webhook handlers.
 	Repo() repository.IntegrationRepository
@@ -1431,6 +1432,12 @@ func (s *service) ReportVerificationProviderError(ctx context.Context, connectio
 		detail = "MillionVerifier account is out of credits; the built-in check is used until it is topped up"
 	}
 	_ = s.repo.SetConnectionStatus(ctx, connectionID, status, health, detail)
+}
+
+// ClearVerificationProviderError puts the connection card back to healthy once
+// the provider answers again, since nothing else ever withdrew the error.
+func (s *service) ClearVerificationProviderError(ctx context.Context, connectionID uuid.UUID) {
+	_ = s.repo.ClearConnectionHealth(ctx, connectionID)
 }
 
 // slackChannelFor resolves the channel to post org notifications to. The

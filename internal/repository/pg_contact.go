@@ -697,11 +697,24 @@ func (r *contactRepository) ListVerificationCandidates(ctx context.Context, limi
 		    c.verification_checked_at IS NULL
 		    OR (c.verification_status = 'unknown' AND c.verification_checked_at < NOW() - make_interval(days => $2))
 		    OR c.verification_checked_at < NOW() - make_interval(days => $3)
+		    -- A verdict reached before the workspace connected a verifier was
+		    -- reached without it; re-check once rather than after the shelf life.
+		    OR EXISTS (
+		      SELECT 1 FROM integration_connections ic
+		      WHERE ic.organization_id = c.organization_id
+		        AND ic.provider = ANY($5)
+		        AND ic.status <> 'disconnected'
+		        AND c.verification_checked_at < ic.created_at
+		    )
 		  )
 		ORDER BY c.verification_checked_at ASC NULLS FIRST, c.created_at ASC
 		LIMIT $1
 	`
-	params := []any{limit, config.VerificationUnknownRecheckDays, config.VerificationRecheckDays, config.VerificationEvidenceFreshDays}
+	providers := make([]string, 0, len(models.VerificationProviders))
+	for _, p := range models.VerificationProviders {
+		providers = append(providers, string(p))
+	}
+	params := []any{limit, config.VerificationUnknownRecheckDays, config.VerificationRecheckDays, config.VerificationEvidenceFreshDays, providers}
 	rows, err := r.DB.Query(ctx, query, params...)
 	if err != nil {
 		db.CaptureError(err, query, params, "query")
