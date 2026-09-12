@@ -116,6 +116,12 @@ const (
 	// follow-up early; a task that fired on time always passes.
 	CampaignNotDueGraceSeconds = 60
 
+	// WarmupReconnectGraceMinutes is how long after a mailbox row is created
+	// its unverifiable warmup tokens are ignored. Reconnecting a mailbox makes
+	// a new row, and warmup_tokens cascades off the old one, so the first sync
+	// re-reads its own history holding tokens that no longer exist.
+	WarmupReconnectGraceMinutes = 60
+
 	// CampaignMaxDeferMinutes bounds how far ahead a DEFERRED campaign tick may
 	// park its successor. A deferral means "nothing is sendable right now", and
 	// the reasons it says that (no lead is due, the new-lead cap is spent, no
