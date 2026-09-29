@@ -870,14 +870,29 @@ func parseSenderEmail(addrs []string) string {
 	if len(addrs) == 0 {
 		return ""
 	}
-	primary := strings.TrimSpace(addrs[0])
-	if primary == "" {
+	return parseAddressField(addrs[0])
+}
+
+// parseAddressField extracts the address from one header field. RFC 5322 puts
+// it in angle brackets, but the IMAP sync writes "Name (addr)" (see
+// imap.GetAddressName), which mail.ParseAddress reads as a comment and rejects,
+// so the parenthesised form is recovered before falling back to the raw value.
+func parseAddressField(raw string) string {
+	field := strings.TrimSpace(raw)
+	if field == "" {
 		return ""
 	}
-	if parsed, err := mail.ParseAddress(primary); err == nil {
+	if parsed, err := mail.ParseAddress(field); err == nil {
 		return strings.ToLower(strings.TrimSpace(parsed.Address))
 	}
-	return strings.ToLower(strings.Trim(primary, "<>"))
+	if open := strings.LastIndex(field, "("); open >= 0 {
+		if close := strings.LastIndex(field, ")"); close > open {
+			if inner := strings.TrimSpace(field[open+1 : close]); strings.Contains(inner, "@") {
+				return strings.ToLower(inner)
+			}
+		}
+	}
+	return strings.ToLower(strings.Trim(field, "<>"))
 }
 
 func messageAddressesMailbox(msg *models.EmailMessageStoreData, account *models.Email) bool {
@@ -894,7 +909,7 @@ func messageAddressesMailbox(msg *models.EmailMessageStoreData, account *models.
 		for _, raw := range fields {
 			addresses, err := mail.ParseAddressList(raw)
 			if err != nil {
-				if address := parseSenderEmail([]string{raw}); address != "" {
+				if address := parseAddressField(raw); address != "" {
 					if _, ok := targets[address]; ok {
 						return true
 					}
